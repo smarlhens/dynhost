@@ -20,39 +20,42 @@
 #
 #CHANGE: « HOST », « LOGIN », « PASSWORD » and « LOG_FILE » to reflect YOUR account variables
 #OR: use, in argument, a custom file contains « HOST », « LOGIN », « PASSWORD » and « LOG_FILE »
-CONFIG_FILE=$1
+CONFIG_FOLDER=$1
 DONTUSEDNS=$2
 
-if [ -f $CONFIG_FILE ]; then
-  . $CONFIG_FILE
-else 
-  echo "$CONFIG_FILE not found, using $HOST, $LOGIN and given PASSWORD ENV"
-  LOG_FILE='/usr/local/dynhost/dynhost.log'
-fi
-
-echo '----------------------------------' >> $LOG_FILE
-echo `date` >> $LOG_FILE
-
-if [ -n "$DONTUSEDNS" ]; then
-  echo -n "DONTUSEDNS=$DONTUSEDNS => using ifconfig.me HTTP server to get local IP"
-  IP=`curl http://ifconfig.me/`
-else
-  echo -n "DONTUSEDNS=$DONTUSEDNS => using opendns DNS service to get local IP"
-  IP=`dig +short myip.opendns.com @resolver1.opendns.com`
-fi  
-OLDIP=`dig +short $HOST`
-if [ -n "$DEBUG" ]; then
-  echo "DEBUG ENV: " $CONFIG_FILE $HOST $LOGIN $PASSWORD $LOG_FILE
-fi
-
-if [ "$IP" ]; then
-  if [ "$OLDIP" != "$IP" ]; then
-    echo -n "Old IP: [$OLDIP]" >> $LOG_FILE
-    echo -n "New IP: [$IP]" >> $LOG_FILE
-    curl "http://www.ovh.com/nic/update?system=dyndns&hostname=$HOST&myip=$IP" -u $LOGIN:$PASSWORD
+for entry in "$CONFIG_FOLDER"/*.cfg
+do
+  if [ -f "$entry" ]; then
+    export $(grep -v '^#' "$entry" | xargs)
   else
-    echo "Notice: IP $HOST [$OLDIP] is identical to WAN [$IP]! No update required." >> $LOG_FILE
+    echo "$entry not found, using $HOST, $LOGIN and given PASSWORD ENV"
+    LOG_FILE='/usr/local/dynhost/dynhost.log'
   fi
-else
-  echo "Error: WAN IP not found. Exiting!" >> $LOG_FILE
-fi
+
+  echo '----------------------------------' >> $LOG_FILE
+  echo `date` >> $LOG_FILE
+
+  if [ -n "$DONTUSEDNS" ]; then
+    echo -n "DONTUSEDNS=$DONTUSEDNS => using ifconfig.me HTTP server to get local IP"
+    IP=`curl http://ifconfig.me/`
+  else
+    echo -n "DONTUSEDNS=$DONTUSEDNS => using opendns DNS service to get local IP"
+    IP=`dig +short myip.opendns.com @resolver1.opendns.com`
+  fi
+  OLDIP=`dig +short $HOST`
+  if [ -n "$DEBUG" ]; then
+    echo "DEBUG ENV: " $CONFIG_FILE $HOST $LOGIN $PASSWORD $LOG_FILE
+  fi
+
+  if [ "$IP" ]; then
+    if [ "$OLDIP" != "$IP" ]; then
+      echo -n "Old IP: [$OLDIP]" >> $LOG_FILE
+      echo -n "New IP: [$IP]" >> $LOG_FILE
+      curl "http://www.ovh.com/nic/update?system=dyndns&hostname=$HOST&myip=$IP" -u $LOGIN:$PASSWORD
+    else
+      echo "Notice: IP $HOST [$OLDIP] is identical to WAN [$IP]! No update required." >> $LOG_FILE
+    fi
+  else
+    echo "Error: WAN IP not found. Exiting!" >> $LOG_FILE
+  fi
+done

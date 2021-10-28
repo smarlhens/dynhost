@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+    volumes:
+      - ./.logs/:/usr/local/dynhost/logs/
+      - ./config/:/usr/local/dynhost/conf.d/
+    tty: true
