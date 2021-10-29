@@ -26,7 +26,7 @@ Main resolution method is using opendns DNS service, but if for some reason, you
 Just add TRUE in the command line as 2nd argument
 
 ```sh
-/usr/local/dynhost/dynhost /usr/local/dynhost/dynhost.cfg TRUE
+/usr/local/dynhost/dynhost /usr/local/dynhost/conf.d TRUE
 ```
 
 A word of caution though, I switched multiple times from ifconfig.me to ifcfg.4 to ifconfig.me back again because these services tend to close/be overloaded. 
