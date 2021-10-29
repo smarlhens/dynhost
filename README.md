@@ -3,20 +3,20 @@ Homemade script similar to update periodically your OVH DNS via DynHost. Mainly 
 New version by zwindler (https://blog.zwindler.fr)
 
 ## Cron
-Use with cron to launch periodicaly
+Use with cron to launch periodically
 
-```
+```sh
 crontab -e
   00 * * * * /usr/local/dynhost/dynhost
 ```
 
 ## Config file
 
-You can use the sample config file given (dynhost.sample.cfg). Rename it to dynhost.cfg and change the variables to meet your own parameters. Use cron this way.
+Create a dynhost.cfg key/value file. Use cron this way.
 
-```
+```sh
 crontab -e
-  00 * * * * /usr/local/dynhost/dynhost /usr/local/dynhost/dynhost.cfg
+  00 * * * * /usr/local/dynhost/dynhost /usr/local/dynhost/conf.d
 ```
 
 ## Local IP resolution method
@@ -25,7 +25,7 @@ Main resolution method is using opendns DNS service, but if for some reason, you
 
 Just add TRUE in the command line as 2nd argument
 
-```
+```sh
 /usr/local/dynhost/dynhost /usr/local/dynhost/dynhost.cfg TRUE
 ```
 
@@ -39,33 +39,45 @@ I'm also building an Alpine docker image that can be used to update your DynHost
 
 ### Build it
 
-For ARM (on a ARM host...)
+For ARM (on an ARM host...)
 
-```
-docker build -t zwindler/dynhost:arm71 .
+```sh
+docker build -t smarlhens/dynhost:arm71 .
 ```
 
-For amd64 (on a x86\_64 node)
+For amd64 (on a x86\x64 node)
 
-```
-docker build -t zwindler/dynhost .
+```sh
+docker build -t smarlhens/dynhost .
 ```
 
 ### Docker with variables
 
 Don't forget to change HOST, LOGIN and PASSWORD in command line
 
+```sh
+docker run --rm -e HOST=YOURDYNHOST -e LOGIN=YOURLOGIN -e PASSWORD=YOURPASSWORD smarlhens/dynhost
 ```
-docker run --rm -e HOST=YOURDYNHOST -e LOGIN=YOURLOGIN -e PASSWORD=YOURPASSWORD zwindler/dynhost
+
+### Run with docker-compose
+
+#### Dev version
+```shell
+docker-compose up -d --build
+```
+
+#### Prod version
+```shell
+docker-compose -f docker-compose.prod.yml up -d --build
 ```
 
 ### Kubernetes as a CronJob and with configuration file 
 
 Don't forget to change HOST, LOGIN and PASSWORD in the configMap section
 
-```
+```yaml
 ---
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: dynhost-cronjob
@@ -77,17 +89,21 @@ spec:
         spec:
           containers:
           - name: dynhost-cronjob
-            image: zwindler/dynhost
+            image: smarlhens/dynhost
             imagePullPolicy: Always
             volumeMounts:
-            - name: config
-              mountPath: /usr/local/dynhost/conf.d
+              - mountPath: /usr/local/dynhost/conf.d/dynhost.cfg
+                subPath: dynhost.cfg
+                readOnly: true
+                name: dynhost-config
           restartPolicy: OnFailure
           volumes:
-          - name: config
+          - name: dynhost-config
             configMap:
-              name: dynhost-configmap
-              cat dynhost-cm.yaml
+              name: dynhost-config
+              items:
+                - key: dynhost.cfg
+                  path: dynhost.cfg
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -99,7 +115,7 @@ data:
     HOST=YOURDYNHOST
     LOGIN=YOURLOGIN
     PASSWORD=YOURPASSWORD
-    LOG_FILE=/usr/local/dynhost/dynhost.log
+    LOG_FILE=/usr/local/dynhost/logs/dynhost.log
 ```
 
 ## History
@@ -109,6 +125,7 @@ data:
 * I did a code cleanup and switching from /bin/sh to /bin/bash to work around a bug in Debian Jessie ("if" clause not working as expected)
 * Lastly, this script uses curl to get the public IP, and then uses wget to update DynHost entry in OVH DNS
 * Added a Docker version of the script for more portability (and ARM devices support)
+* Handle multiple config in specific folder
 
 ## More information
 

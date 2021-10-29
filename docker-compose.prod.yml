@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  app:
+    image: smarlhens/dynhost:latest
+    volumes:
+      - ./.logs/:/usr/local/dynhost/logs/
+      - ./config/:/usr/local/dynhost/conf.d/
+    tty: true
